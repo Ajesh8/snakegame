@@ -10,7 +10,7 @@ func reset() {
 	term.Sync() // cosmestic purpose
 }
 
-func StartGame(height int, width int) {
+func StartGame(height int, width int) (int, string) {
 	err := term.Init()
 	if err != nil {
 		panic(err)
@@ -18,10 +18,10 @@ func StartGame(height int, width int) {
 	defer term.Close()
 	game := new(gameState)
 	game.IntiliazeGameState(height, width)
-	fmt.Println("Enter any key to see their ASCII code or press ESC button to quit")
 keyPressListenerLoop:
 	for {
 		fmt.Printf("Score:%d Snake Length:%d\n", game.score, game.length)
+		fmt.Println("User arrow keys to move. Press ESC to quit")
 		game.printBoard()
 		switch ev := term.PollEvent(); ev.Type {
 		case term.EventKey:
@@ -49,5 +49,17 @@ keyPressListenerLoop:
 			panic(ev.Err)
 		}
 		game.handleSnakeMovement()
+		if game.gameOver != 0 {
+			break keyPressListenerLoop
+		}
 	}
+	var message string
+	if game.gameOver == 1 {
+		message = "Your snake hit a wall and died of concussion."
+	} else if game.gameOver == 2 {
+		message = "Your snake died by eating itself like a maniac."
+	} else {
+		message = "You quit the game."
+	}
+	return game.score, message
 }

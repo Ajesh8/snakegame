@@ -20,24 +20,27 @@ type gameState struct {
 	snakeTail      coordinate
 	foodCoordinate coordinate
 	moveGrid       [][]string
+	gameOver       int
 }
 
-func (p *gameState) GetRandomCoordinate(height int, width int) coordinate {
+func (p *gameState) GetUnoccupiedRandomCoordinate() coordinate {
 	rand.Seed(time.Now().UnixNano())
-	var result coordinate
-	result.x = rand.Intn(width)
-	result.y = rand.Intn(height)
-	return result
-}
-
-func (p *gameState) setFoodCoordinate(food coordinate) {
-	for p.board[food.y][food.x] == 1 {
-		food = p.GetRandomCoordinate(len(p.board), len(p.board[0]))
+	var emptyCell []coordinate
+	for i := 0; i < len(p.board); i++ {
+		for j := 0; j < len(p.board[0]); j++ {
+			if p.board[i][j] == 0 {
+				emptyCell = append(emptyCell, coordinate{
+					x: j,
+					y: i,
+				})
+			}
+		}
 	}
-	p.foodCoordinate = food
+	return emptyCell[rand.Intn(len(emptyCell))]
 }
 
 func (p *gameState) IntiliazeGameState(height int, width int) {
+	p.gameOver = 0
 	p.board = make([][]int, height)
 	p.moveGrid = make([][]string, height)
 	for i := range p.board {
@@ -59,22 +62,36 @@ func (p *gameState) IntiliazeGameState(height int, width int) {
 			p.board[i][j] = 0
 		}
 	}
-	p.board[p.snakeHead.y][p.snakeHead.x] = 1
-	p.setFoodCoordinate(p.GetRandomCoordinate(height, width))
+	p.board[p.snakeHead.y][p.snakeHead.x] = 3
+	p.foodCoordinate = p.GetUnoccupiedRandomCoordinate()
 	p.board[p.foodCoordinate.y][p.foodCoordinate.x] = 2
 }
 
 func (p *gameState) printBoard() {
-	for i := 0; i < len(p.board); i++ {
-		for j := 0; j < len(p.board[i]); j++ {
+	for i := -1; i <= len(p.board); i++ {
+		for j := -1; j <= len(p.board[0]); j++ {
+			if i == -1 || i == len(p.board) {
+				fmt.Print(" -")
+				continue
+			}
+			if j == -1 || j == len(p.board[0]) {
+				fmt.Print(" |")
+				if i == -1 {
+					fmt.Print("| ")
+				}
+				continue
+			}
 			if p.board[i][j] == 0 {
-				fmt.Print(".")
+				fmt.Print("  ")
 			}
 			if p.board[i][j] == 1 {
-				fmt.Print("X")
+				fmt.Print("o ")
 			}
 			if p.board[i][j] == 2 {
-				fmt.Print("O")
+				fmt.Print("X ")
+			}
+			if p.board[i][j] == 3 {
+				fmt.Print("O ")
 			}
 		}
 		fmt.Println()
@@ -91,17 +108,35 @@ func nextCoordinate(x int, y int, dir string) (int, int) {
 	}
 	return x + 1, y
 }
+
+func checkBoundaryCollision(x int, y int, width int, height int) bool {
+	if x < 0 || y < 0 || x == width || y == height {
+		return true
+	}
+	return false
+}
 func (p *gameState) handleSnakeMovement() {
 	p.moveGrid[p.snakeHead.y][p.snakeHead.x] = p.currentRound
-	p.snakeHead.x, p.snakeHead.y = nextCoordinate(p.snakeHead.x, p.snakeHead.y, p.currentRound)
 	p.board[p.snakeHead.y][p.snakeHead.x] = 1
+	p.snakeHead.x, p.snakeHead.y = nextCoordinate(p.snakeHead.x, p.snakeHead.y, p.currentRound)
+	if checkBoundaryCollision(p.snakeHead.x, p.snakeHead.y, len(p.board[0]), len(p.board)) {
+		p.gameOver = 1
+		return
+	}
+	if p.board[p.snakeHead.y][p.snakeHead.x] == 1 {
+		p.gameOver = 2
+		return
+	}
+	p.board[p.snakeHead.y][p.snakeHead.x] = 3
 	if p.foodCoordinate.x != p.snakeHead.x || p.foodCoordinate.y != p.snakeHead.y {
 		p.board[p.snakeTail.y][p.snakeTail.x] = 0
 		p.snakeTail.x, p.snakeTail.y = nextCoordinate(p.snakeTail.x, p.snakeTail.y, p.moveGrid[p.snakeTail.y][p.snakeTail.x])
-		p.board[p.snakeTail.y][p.snakeTail.x] = 1
+		if p.snakeTail.x != p.snakeHead.x || p.snakeTail.y != p.snakeHead.y {
+			p.board[p.snakeTail.y][p.snakeTail.x] = 1
+		}
 	} else {
 		p.length++
-		p.setFoodCoordinate(p.GetRandomCoordinate(len(p.board), len(p.board[0])))
+		p.foodCoordinate = p.GetUnoccupiedRandomCoordinate()
 		p.board[p.foodCoordinate.y][p.foodCoordinate.x] = 2
 		p.score++
 	}
