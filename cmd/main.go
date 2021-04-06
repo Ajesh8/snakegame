@@ -21,21 +21,21 @@ func main() {
 		if err != nil {
 			log.Fatalf("error during string to int conversion:%v", err)
 		}
-		if height > 40 {
+		if height > 40 { // validating height to fit the terminal
 			fmt.Println("Box height might exceed the commandline. Setting height to 40")
 			height = 40
 		} else if height < 10 {
 			height = 10
 			fmt.Println("Box height is too small for the snake game. Setting it to 10")
 		}
-		if width > 60 {
+		if width > 60 { //validating width to fit the terminal
 			width = 60
 			fmt.Println("Box width might exceed the commandline. Setting height to 60")
 		} else if width < 10 {
 			width = 10
 			fmt.Println("Box width is too small for the snake game. Setting it to 10")
 		}
-		score, message := snakegameboard.StartGame(height, width)
-		fmt.Printf("Game Over. %s Your final score is:%d\n", message, score)
+		score, message := snakegameboard.StartGame(height, width)            // Starting the game.
+		fmt.Printf("Game Over. %s Your final score is:%d\n", message, score) // After game over, show score and message.
 	}
 }
